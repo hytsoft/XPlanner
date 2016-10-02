@@ -19,6 +19,4 @@ namespace XPlanner.LabElements.Tools
             //blah
         }
     }
-
-
 }
