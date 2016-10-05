@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace XPlanner.LabElements.Ingredients
 {
     // Ingredients (just like vessels) are (currently) inertic. i.e. it has no methods.
-    // Due to its divesity, this class will be defined as a dynamic one.
+    // Due to its divesity, this class will be defined as dynamic.
     // Thus, structure may change constantly.
 
     // Ingredients current structure is partly taken from 'Sigma-Aldrich' site.
@@ -19,18 +19,28 @@ namespace XPlanner.LabElements.Ingredients
 
         public enum ADME_ToxType
         {
-            
+            PTAs, // Permiablity and Transporter Assays
+            MAs,  // Metabolism Assays
+            TAs,  // Toxicology Assays
+        };
+
+        public enum AntibioticType
+        {
+            ABPs, // Antibiotic Products
+            ABSTs, // Antibiotic Selector Tools
+            ABs,   // Antibiotic (will be sorted by groups)
         };
 
         public enum AntibodyType
         {
-           
+           MonoclonalAntiBeta_Actin_Mouse_AC15_AF, // Monoclonal Anti-beta Actin Antibody produced in Mouse, Clone AC-15, Ascites fluid
+           AntiActin_Rabbit_AI // Anti-Actin antibody produced in Rabbit, Affinity Isolated Antibody
         };
 
-        public enum ProteinAssayType
+        public enum BiochemicalType
         {
-            Lysyle_Oxidase,
-            Amilase,
+            NOR3, // E4Ethyl2_E_Hydroxymino_5Nitro3Hexenamide
+            NOR4, // E4Ethyl2_Z_Hydroxymino_5Nitro3Hexen1ylNicotinamide
         };
 
         public enum ReagentType
@@ -41,9 +51,9 @@ namespace XPlanner.LabElements.Ingredients
         public enum CellCultureType
         {
             Fibroblast,
-            Endothelial,
-            Epithelial,
-            Neuron,
+            Endothelia,
+            Epithelia,
+            Neuro,
         };
 
         public enum GenType
@@ -55,7 +65,9 @@ namespace XPlanner.LabElements.Ingredients
 
         public enum BufferType
         {
-
+            AMPD,
+            AMP95, 
+            ACES // N-(2-Acetamido)-2-aminoethanesulfonic acid
         };
 
         public enum StainType
@@ -85,9 +97,9 @@ namespace XPlanner.LabElements.Ingredients
             AntibodyType m_type;
         }
 
-        public class ProteinAssay : Ingredient
+        public class Biochemical : Ingredient
         {
-            ProteinAssayType m_type;
+            BiochemicalType m_type;
         }
 
         public class Reagent : Ingredient 
