@@ -53,5 +53,20 @@ namespace XPlanner.LabElements.Tools
     {
         void Heat();
     }
-    
+
+    public interface ISpinnable
+    {
+        void Spin();
+    }
+
+    public interface IMixable
+    {
+        void Mix();
+    }
+
+    public interface IFlowable
+    {
+        void Draw();
+        void Release();
+    }
 }
