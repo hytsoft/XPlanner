@@ -52,6 +52,7 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="LabElements\Devices\Device.cs" />
     <Compile Include="LabElements\Ingredients\Ingredient.cs" />
     <Compile Include="LabElements\LabElement.cs" />
     <Compile Include="LabElements\Tools\Tool.cs" />
@@ -82,7 +83,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="GUI\" />
-    <Folder Include="LabElements\Devices\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
