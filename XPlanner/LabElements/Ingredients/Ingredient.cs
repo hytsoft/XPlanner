@@ -40,7 +40,7 @@ namespace XPlanner.LabElements.Ingredients
         public enum BiochemicalType
         {
             NOR3, // E4Ethyl2_E_Hydroxymino_5Nitro3Hexenamide
-            NOR4, // E4Ethyl2_Z_Hydroxymino_5Nitro3Hexen1ylNicotinamide
+            NOR4, // E4Ethyl2_Z_Hydroxymino_5Nitro3Hexen1yl_Nicotinamide
         };
 
         public enum ReagentType
@@ -117,7 +117,7 @@ namespace XPlanner.LabElements.Ingredients
             GenType m_type;
         }
 
-        public class Buffur : Ingredient
+        public class Buffer : Ingredient
         {
             BufferType m_type;
         }
