@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using HtmlAgilityPack;
 using System.Net;
 using System.Globalization;
+using System.IO;
 
 namespace InternetDataGetter
 {
@@ -30,7 +31,20 @@ namespace InternetDataGetter
         public string GeneralDescription;
         public string Packaging;
         public string Reconstitution;
+        public string OtherNotes;
+        public string LegalInformation;
+        public string Caution;
+        public string BiochemPhysiolActions;
+        public string PreparationNote;
+        public string AnalysisNote;
 
+    }
+
+    public class Product
+    {
+        public Description Description;
+        public List<TableData> Properties;
+        public string Name;
     }
 
     class SigmaAldrichParser
@@ -132,8 +146,20 @@ namespace InternetDataGetter
                                         case "Packaging":
                                             description.Packaging = nearestParagraph.InnerText.Trim();
                                             break;
-                                        case "Reconstitution":
-                                            description.Reconstitution = nearestParagraph.InnerText.Trim();
+                                        case "Other Notes":
+                                            description.OtherNotes = nearestParagraph.InnerText.Trim();
+                                            break;
+                                        case "Legal Information":
+                                            description.LegalInformation = nearestParagraph.InnerText.Trim();
+                                            break;
+                                        case "Caution":
+                                            description.Caution = nearestParagraph.InnerText.Trim();
+                                            break;
+                                        case "Biochem/physiol Actions":
+                                            description.BiochemPhysiolActions = nearestParagraph.InnerText.Trim();
+                                            break;
+                                        case "Preparation Note":
+                                            description.PreparationNote = nearestParagraph.InnerText.Trim();
                                             break;
                                         default:
                                             break;
@@ -282,9 +308,9 @@ namespace InternetDataGetter
         {
             int position = GetStartPositionOfLargestWhiteSpacesSequence(row);
             string firstVal = row.Substring(0, position);
-            string secondVal = row.Substring(position + 1, row.Length - (position + 1)).Trim();
+            string secondVal = row.Substring(position, row.Length - (position)).Trim();
 
-            return new KeyValuePair<string, string>(firstVal, secondVal);
+            return new KeyValuePair<string, string>(firstVal.Trim(), secondVal.Trim());
         }
 
         private static HtmlNode GetNearestElement(HtmlNode node, string element, int index)
@@ -420,6 +446,11 @@ namespace InternetDataGetter
             headers.Add("General description");
             headers.Add("Packaging");
             headers.Add("Reconstitution");
+            headers.Add("Other Notes");
+            headers.Add("Legal Information");
+            headers.Add("Caution");
+            headers.Add("Biochem/physiol Actions");
+            headers.Add("Preparation Note");
 
             elements.Add("//div[@class='descriptionContent']");
 
@@ -440,6 +471,48 @@ namespace InternetDataGetter
             }
 
             return products;
+        }
+
+        public static Product GetProduct(string product_uri)
+        {
+            Product p = new Product();
+            List<string> elements = new List<string>();
+            List<string> headers = new List<string>();
+            headers.Add("Components");
+            headers.Add("Application");
+            headers.Add("Features and Benefits");
+            headers.Add("General description");
+            headers.Add("Packaging");
+            headers.Add("Reconstitution");
+            headers.Add("Other Notes");
+            headers.Add("Legal Information");
+            headers.Add("Caution");
+            headers.Add("Biochem/physiol Actions");
+            headers.Add("Preparation Note");
+
+            elements.Add("//div[@class='descriptionContent']");
+
+            HtmlDocument dataPage = DataGetter.GetHtmlpage(new Uri(product_uri));
+
+            List<KeyValuePair<string, HtmlNodeCollection>> dataDescription = DataGetter.GetDataByXPATH(dataPage, elements);
+
+            p.Description = SigmaAldrichParser.ParseDescription(dataDescription, headers);
+            p.Properties = SigmaAldrichParser.ParseDetailProperties(dataPage.DocumentNode);
+
+            List<string> elements1 = new List<string>();
+            elements1.Add("//p[@class='product-name']");
+            p.Name = GetProductName(dataPage, elements1);
+
+            return p;
+        }
+
+        private static string GetProductName(HtmlDocument webpage, List<string> element_names)
+        {
+            string name = "";
+            List<KeyValuePair<string, HtmlNodeCollection>> dataName = DataGetter.GetDataByXPATH(webpage, element_names);
+            name = dataName[0].Value.First(x => x.Name == "p").InnerText.Replace("\t", "").Replace("\n", "").Trim();
+
+            return name;
         }
 
         private static string GetCategoryUri(string category)
@@ -676,6 +749,78 @@ namespace InternetDataGetter
             }
 
             return productsLinks;
+        }
+
+        public static void WriteProductDataToCSVFile(string filepath, Product product)
+        {
+            using (FileStream fs = new FileStream(filepath, FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(fs))
+            {
+                //First write the name
+                string productString = "";
+
+                productString += product.Name + ",";
+
+                //write properties
+                foreach (TableData property in product.Properties)
+                {
+                    productString += property.left + "," + property.right.Replace(",", ";") + ",";
+                }
+
+                //Add description
+                if (product.Description.Application != null && product.Description.Application != "")
+                {
+                    productString += SigmaAldrichConstants.ApplicationDesc + "," + product.Description.Application.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.GeneralDescription != null && product.Description.GeneralDescription != "")
+                {
+                    productString += SigmaAldrichConstants.GeneralDescriptionDesc + "," + product.Description.GeneralDescription.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.OtherNotes != null && product.Description.OtherNotes != "")
+                {
+                    productString += SigmaAldrichConstants.OtherNotesDesc + "," + product.Description.OtherNotes.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.Packaging != null && product.Description.Packaging != "")
+                {
+                    productString += SigmaAldrichConstants.PackagingDesc + "," + product.Description.Packaging.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.LegalInformation != null && product.Description.LegalInformation != "")
+                {
+                    productString += SigmaAldrichConstants.LegalInformationDesc + "," + product.Description.LegalInformation.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.PreparationNote != null && product.Description.PreparationNote != "")
+                {
+                    productString += SigmaAldrichConstants.PreparationNoteDesc + "," + product.Description.PreparationNote.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.Reconstitution != null && product.Description.Reconstitution != "")
+                {
+                    productString += SigmaAldrichConstants.ReconstitutionDesc + "," + product.Description.Reconstitution.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.BiochemPhysiolActions != null && product.Description.BiochemPhysiolActions != "")
+                {
+                    productString += SigmaAldrichConstants.BiochemPhysiolActionsDesc + "," + product.Description.BiochemPhysiolActions.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.AnalysisNote != null && product.Description.AnalysisNote != "")
+                {
+                    productString += SigmaAldrichConstants.AnalysisNote + "," + product.Description.AnalysisNote.Replace(",", ";") + ",";
+                }
+
+                if (product.Description.FeaturesBenefits != null && product.Description.FeaturesBenefits != "")
+                {
+                    productString += SigmaAldrichConstants.FeaturesBenefitsDesc + "," + product.Description.FeaturesBenefits.Replace(",", ";");
+                }
+
+
+                sw.WriteLine(productString);
+            }
         }
     }
 }

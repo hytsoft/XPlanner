@@ -34,5 +34,17 @@ namespace InternetDataGetter
         public static readonly string MolecularBiology = @"http://www.sigmaaldrich.com/catalog/search?interface=All&N=0+9617439&mode=partialmax&focus=product";
         public static readonly string PCRAmplification = @"http://www.sigmaaldrich.com/catalog/search?interface=All&N=0+9619242&mode=partialmax&focus=product";
         public static readonly string SynthetichBiology = @"http://www.sigmaaldrich.com/catalog/search?interface=ALL&N=0+119241921&mode=partialmax.html&focus=product&lang=en&region=US";
+
+        public static readonly string ApplicationDesc = @"Application";
+        public static readonly string ComponentsDesc = @"Components";
+        public static readonly string FeaturesBenefitsDesc = @"Features and Benefits";
+        public static readonly string GeneralDescriptionDesc = @"General description";
+        public static readonly string PackagingDesc = @"Packaging";
+        public static readonly string ReconstitutionDesc = @"Reconstitution";
+        public static readonly string OtherNotesDesc = @"Other Notes";
+        public static readonly string LegalInformationDesc = @"Legal Information";
+        public static readonly string BiochemPhysiolActionsDesc = @"Biochem/physiol Actions";
+        public static readonly string PreparationNoteDesc = @"Preparation Note";
+        public static readonly string AnalysisNote = @"Analysis Note";
     }
 }

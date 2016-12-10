@@ -52,8 +52,11 @@ namespace InternetDataGetter
             //List<KeyValuePair<string, HtmlNode>> data = dg.GetData(new Uri(uri), elements);
             //List<TableData> properties =  SigmaAldrichParser.ParseDetailProperties(data[0].Value);
 
-            List<Description> products = SigmaAldrichParser.GetAllProductsForCategory("AcidsBases", 20, 1);
+            //List<Description> products = SigmaAldrichParser.GetAllProductsForCategory("AcidsBases", 20, 1);
             //SigmaAldrichParser.GetCategoryPaginationUrls(SigmaAldrichConstants.AcidsBases);
+
+            Product p = SigmaAldrichParser.GetProduct(@"http://www.sigmaaldrich.com/catalog/product/sial/62915?lang=en&region=IL");
+            SigmaAldrichParser.WriteProductDataToCSVFile("data.csv", p);
 
         }
     }
