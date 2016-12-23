@@ -61,35 +61,38 @@ namespace InternetDataGetter
                 HtmlNodeCollection tableBody = currNode.SelectNodes("//tbody");
 
 
-                foreach (HtmlNode tableRow in tableBody)
+                if (tableBody != null)
                 {
-                    HtmlNodeCollection tableRows = tableRow.SelectNodes("tr");
-
-                    if (tableRows != null)
+                    foreach (HtmlNode tableRow in tableBody)
                     {
-                        foreach (HtmlNode row in tableRows)
+                        HtmlNodeCollection tableRows = tableRow.SelectNodes("tr");
+
+                        if (tableRows != null)
                         {
-
-                            HtmlNodeCollection cells = row.SelectNodes("th|td");
-                            if (cells != null)
+                            foreach (HtmlNode row in tableRows)
                             {
-                                foreach (HtmlNode cell in cells)
+
+                                HtmlNodeCollection cells = row.SelectNodes("th|td");
+                                if (cells != null)
                                 {
-                                    string tmp = WebUtility.HtmlDecode(row.InnerText).Replace("\n", "").Replace("\r", "").Replace("\t", "").Trim();
-
-                                    if (tmp != "")
+                                    foreach (HtmlNode cell in cells)
                                     {
-                                        KeyValuePair<string, string> pair = GetTableRowData(tmp);
+                                        string tmp = WebUtility.HtmlDecode(row.InnerText).Replace("\n", "").Replace("\r", "").Replace("\t", "").Trim();
 
-                                        if (!tableData.Exists(x => x.left == pair.Key && x.right == pair.Value))
+                                        if (tmp != "")
                                         {
-                                            tableData.Add(new TableData() { left = pair.Key, right = pair.Value });
+                                            KeyValuePair<string, string> pair = GetTableRowData(tmp);
+
+                                            if (!tableData.Exists(x => x.left == pair.Key && x.right == pair.Value))
+                                            {
+                                                tableData.Add(new TableData() { left = pair.Key, right = pair.Value });
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
+                    } 
                 }
             }
 
@@ -211,24 +214,162 @@ namespace InternetDataGetter
                 firstIngredient = parts[0].Substring(17, parts[0].Length - 1 - 16);
             }
 
-            tmp.Name = firstIngredient;
-
-            int partsCount = parts.Count();
-            for (int i = 1; i < partsCount; i++)
+            if (CountNumbersInString(firstIngredient) == 1)
             {
-                string str = parts[i].Trim();
+                tmp.Name = firstIngredient;
 
-                KeyValuePair<double, string> num = ExtractNumberFromString(str);
+                int partsCount = parts.Count();
+                for (int i = 1; i < partsCount; i++)
+                {
+                    string str = parts[i].Trim();
 
-                tmp.Amount = num.Key;
-                tmp.Unit = "g/L";
-                ingredientsData.Add(tmp);
+                    //Need to decide if the first character is a number, before sending to the function
+                    //If not a number, we need to find the first character which is a number
 
-                tmp = new IngredientData();
-                tmp.Name = num.Value;
+                    KeyValuePair<double, string> num = new KeyValuePair<double, string>(0.00, "0.00");
+                    if (char.IsNumber(str[0]))
+                    {
+                        num = ExtractNumberFromString(str);
+                    }
+                    else
+                    {
+                        int firstNumLocation = ExtractNumberLocationFromString(str);
+                        num = ExtractNumberFromString(str.Substring(firstNumLocation));
+                    }
+
+
+
+                    tmp.Amount = num.Key;
+                    tmp.Unit = "g/L";
+                    ingredientsData.Add(tmp);
+
+                    tmp = new IngredientData();
+                    tmp.Name = num.Value;
+                } 
+            }
+            else
+            {
+                ingredientsData.AddRange(ExtractComponentsFromString2(ingredients.Substring("Ingredients (g/L)".Length)));                
             }
 
             return ingredientsData;
+        }
+
+        private static List<IngredientData> ExtractComponentsFromString2(string str)
+        {
+            List<IngredientData> ingredientsData = new List<IngredientData>();
+
+            string number = "";
+            string name = "";
+            bool processing_number = false;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (char.IsNumber(str[i]) || str[i] == '.')
+                {
+                    number += str[i];
+                    processing_number = true;
+                }
+                else
+                {
+                    if (processing_number)
+                    {
+                        //the number just ended, need to create new ingredient and push it to the list
+                        ingredientsData.Add(new IngredientData()
+                        {
+                            Name = name,
+                            Amount = double.Parse(number),
+                            Unit = "g/L"
+                        });
+
+                        number = "";
+                        name = "";
+                        name += str[i];
+                        processing_number = false;                  
+                    }
+                    else
+                    {
+                        name += str[i];
+                    }
+                }
+            }
+
+            return ingredientsData;
+        }
+
+        private static List<IngredientData> ExtractComponentsFromString(string str, out string remainder_str)
+        {
+            List<IngredientData> ingredientsData = new List<IngredientData>();
+            string name = "";
+            double number = -1.00;
+            int i = 0;
+
+            while (i < str.Length)
+            {
+                if (char.IsNumber(str[i]))
+                {
+                    number = ExtractNumberFromString(str.Substring(i)).Key;
+                }
+                else
+                {
+                    name += str[i];
+                }
+
+                if (number != -1.00 && name != "")
+                {
+                    ingredientsData.Add(new IngredientData() { Name = name.Trim(), Amount = number, Unit = "g/L" });
+                    i += string.Format("{0:0.00}", number).Length;
+                    name = "";
+                    number = -1.00;
+                }
+                else
+                {
+                    i += 1;
+                }
+            }
+
+            remainder_str = name;
+
+            return ingredientsData;
+        }
+
+        private static int CountNumbersInString(string str)
+        {
+            int counter = 0;
+            int numSequence = 0;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (char.IsNumber(str[i]) && numSequence == 0)
+                {
+                    counter++;
+                    numSequence++;
+                }
+                else
+                {
+                    numSequence = 0;
+                }
+            }
+
+            return counter;
+        }
+
+        private static int ExtractNumberLocationFromString(string str)
+        {
+            int i = 0;
+
+            if (str != "")
+            {
+                for (i = 0; i < str.Length; i++)
+                {
+                    if(char.IsNumber(str[i]))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return i;
         }
 
         private static List<IngredientData> ExtractComponentsMethod2(HtmlNode nearestParagraph)
@@ -266,7 +407,14 @@ namespace InternetDataGetter
                                 }
                             }
 
-                            ingredientsData.Add(new IngredientData() { Amount = double.Parse(componentParts[0]), Name = (name != "" ? name : componentParts[2]), Unit = componentParts[1] });
+                            try
+                            {
+                                ingredientsData.Add(new IngredientData() { Amount = double.Parse(componentParts[0]), Name = (name != "" ? name : componentParts[2]), Unit = componentParts[1] });
+                            }
+                            catch (Exception)
+                            {
+
+                            }
                             flagStart = 0;
                             currComponent = "";
                             currComponent += ingredients[i];
@@ -296,7 +444,14 @@ namespace InternetDataGetter
                             }
                         }
 
-                        ingredientsData.Add(new IngredientData() { Amount = double.Parse(componentParts[0]), Name = (name != "" ? name : componentParts[2]), Unit = componentParts[1] });
+                        try
+                        {
+                            ingredientsData.Add(new IngredientData() { Amount = double.Parse(componentParts[0]), Name = (name != "" ? name : componentParts[2]), Unit = componentParts[1] });
+                        }
+                        catch (Exception)
+                        {
+
+                        }
                     }
                 }
             }
@@ -422,8 +577,15 @@ namespace InternetDataGetter
                 }
             }
 
-            double parsedNumber = double.Parse(number) * 1.00; //Convert.ToDouble(number);
-            string data = str.Substring(i, str.Length - i);
+            double parsedNumber = 0.00;
+            string data = "";
+            if (number != "")
+            {
+                parsedNumber = double.Parse(number) * 1.00; //Convert.ToDouble(number);
+                data = str.Substring(i, str.Length - i); 
+            }
+
+
 
             return new KeyValuePair<double, string>(Math.Round(parsedNumber, 2), data);
         }
@@ -435,7 +597,7 @@ namespace InternetDataGetter
 
             List<string> paginationUri = GetCategoryPaginationUrls(categoryUri, pages_to_get);
 
-            List<string> productsUris = GetProductsUri(paginationUri, num_products_to_get);
+            List<string> productsUris = GetAllProductsUri(paginationUri, num_products_to_get);
 
             List<Description> products = new List<Description>();
             List<string> elements = new List<string>();
@@ -510,12 +672,16 @@ namespace InternetDataGetter
         {
             string name = "";
             List<KeyValuePair<string, HtmlNodeCollection>> dataName = DataGetter.GetDataByXPATH(webpage, element_names);
-            name = dataName[0].Value.First(x => x.Name == "p").InnerText.Replace("\t", "").Replace("\n", "").Trim();
+
+            if (dataName.Count > 0)
+            {
+                name = dataName[0].Value.First(x => x.Name == "p").InnerText.Replace("\t", "").Replace("\n", "").Trim(); 
+            }
 
             return name;
         }
 
-        private static string GetCategoryUri(string category)
+        public static string GetCategoryUri(string category)
         {
             string retVal = "";
 
@@ -701,19 +867,19 @@ namespace InternetDataGetter
             return tmp;
         }
 
-        private static List<string> GetProductsUri(List<string> pagination_uri, int num_products_to_get)
+        public static List<string> GetAllProductsUri(List<string> pagination_uri, int num_pages_to_get)
         {
             //go over all product pages and extract product url's
             List<string> productsLinks = new List<string>();
 
-            int numProductsToGet = num_products_to_get;
+            //int numProductsToGet = num_pages_to_get;
 
-            if (numProductsToGet == 0)
-            {
-                numProductsToGet = pagination_uri.Count;
-            }
+            //if (numProductsToGet == 0)
+            //{
+            //    numProductsToGet = pagination_uri.Count;
+            //}
 
-            for (int i = 0; i < numProductsToGet; i++)
+            for (int i = 0; i < pagination_uri.Count; i++)
             {
                 HtmlDocument dataPage = DataGetter.GetHtmlpage(new Uri (pagination_uri[i]));
 
@@ -724,7 +890,7 @@ namespace InternetDataGetter
 
                 HtmlNodeCollection productsNodes = data[0].Value;
 
-                for (int j = 0; j < numProductsToGet && j < productsNodes.Count; j++)
+                for (int j = 0; /*j < numProductsToGet && */j < productsNodes.Count; j++)
                 {
                     string link = productsNodes[j].InnerHtml;
                     string extractedLink = ExtractLinkFromHtml(productsNodes[j], "href=", "\">");
@@ -738,15 +904,41 @@ namespace InternetDataGetter
                 //    productsLinks.Add(SigmaAldrichConstants.SigmaAldrichMain + "/" + extractedLink);
                 //}
 
-                if (productsLinks.Count < numProductsToGet)
-                {
+                //if (productsLinks.Count < numProductsToGet)
+                //{
                     System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(5.0, 15.0) * 1000); 
-                }
-                else
-                {
-                    break;
-                }
+                //}
+                //else
+                //{
+                //    break;
+                //}
             }
+
+            return productsLinks;
+        }
+
+        public static List<string> GetProductsUri(string pagination_uri)
+        {
+            //go over the product page and extract product url's
+            List<string> productsLinks = new List<string>();
+            
+            HtmlDocument dataPage = DataGetter.GetHtmlpage(new Uri(pagination_uri));
+
+            //now get all product url's from page
+            List<string> elements = new List<string>();
+            elements.Add("//li[@class='productNumberValue']");
+            List<KeyValuePair<string, HtmlNodeCollection>> data = DataGetter.GetDataByXPATH(dataPage, elements);
+
+            HtmlNodeCollection productsNodes = data[0].Value;
+
+            for (int j = 0; /*j < numProductsToGet && */j < productsNodes.Count; j++)
+            {
+                string link = productsNodes[j].InnerHtml;
+                string extractedLink = ExtractLinkFromHtml(productsNodes[j], "href=", "\">");
+                productsLinks.Add(SigmaAldrichConstants.SigmaAldrichMain + "/" + extractedLink);
+            }
+
+            System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(5.0, 15.0) * 1000);
 
             return productsLinks;
         }
