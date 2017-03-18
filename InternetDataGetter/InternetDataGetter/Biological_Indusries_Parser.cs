@@ -7,17 +7,14 @@ using HtmlAgilityPack;
 
 namespace InternetDataGetter
 {
-    public static class BiologicalIndusriesParser
+    public class BiologicalIndusriesParser : WebsiteParser
     {
-        //string ProductName = GetProductName(uri, elements);
-
         public static void Parse(Uri uri)
         {
             HtmlDocument entirePage = DataGetter.GetHtmlpage(uri);
             //string productName = GetProductName(entirePage, "//h2[@class='product-name']");
             //string description = GetDescription(entirePage, "//meta[@name='description']");
             specifications Specifications = GetSpecifications(entirePage, "//td[@class='data']");
-
         }
 
         private static string GetProductName(HtmlDocument page, string element)

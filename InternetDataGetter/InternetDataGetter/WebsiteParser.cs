@@ -12,7 +12,7 @@ namespace InternetDataGetter
         public string Name;
     }
 
-    abstract class WebsiteParser
+    public abstract class WebsiteParser
     {
         public Uri address;
 
