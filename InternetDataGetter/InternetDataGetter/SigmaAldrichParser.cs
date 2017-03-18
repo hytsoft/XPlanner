@@ -40,11 +40,10 @@ namespace InternetDataGetter
 
     }
 
-    public class Product
+    public class SA_Product : Product
     {
         public Description Description;
-        public List<TableData> Properties;
-        public string Name;
+        public List<TableData> Properties;        
     }
 
     class SigmaAldrichParser
@@ -635,9 +634,9 @@ namespace InternetDataGetter
             return products;
         }
 
-        public static Product GetProduct(string product_uri)
+        public static SA_Product GetProduct(string product_uri)
         {
-            Product p = new Product();
+            SA_Product p = new SA_Product();
             List<string> elements = new List<string>();
             List<string> headers = new List<string>();
             headers.Add("Components");
@@ -821,7 +820,19 @@ namespace InternetDataGetter
         {
             string link = WebUtility.HtmlDecode(node.InnerHtml);
             int linkkStartLocation = link.IndexOf(starting_str/*"href"*/, 0);
+
+            if (link.Contains(" ;\" = \"\""))
+            {
+                int pos = link.IndexOf(" ;\" = \"\"");
+                link = link.Remove(pos, " ;\" = \"\"".Length);
+            }
+
             int linkEndLocation = link.IndexOf(ending_str/*"'>"*/, linkkStartLocation);
+            if (linkEndLocation == -1)
+            {
+                linkEndLocation = link.IndexOf("region=US"/*"'>"*/, linkkStartLocation) + "region=US".Length;
+            }
+
             link = link.Substring(linkkStartLocation + starting_str.Length + 2, linkEndLocation - (linkkStartLocation + starting_str.Length + 2));
 
             return link;
@@ -927,23 +938,28 @@ namespace InternetDataGetter
             //now get all product url's from page
             List<string> elements = new List<string>();
             elements.Add("//li[@class='productNumberValue']");
+            elements.Add("//td[@class='column2value']");
             List<KeyValuePair<string, HtmlNodeCollection>> data = DataGetter.GetDataByXPATH(dataPage, elements);
 
-            HtmlNodeCollection productsNodes = data[0].Value;
-
-            for (int j = 0; /*j < numProductsToGet && */j < productsNodes.Count; j++)
+            if (data != null && data.Count > 0)
             {
-                string link = productsNodes[j].InnerHtml;
-                string extractedLink = ExtractLinkFromHtml(productsNodes[j], "href=", "\">");
-                productsLinks.Add(SigmaAldrichConstants.SigmaAldrichMain + "/" + extractedLink);
-            }
+                HtmlNodeCollection productsNodes = data[0].Value;
 
-            System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(5.0, 15.0) * 1000);
+                for (int j = 0; /*j < numProductsToGet && */j < productsNodes.Count; j++)
+                {
+                    string link = productsNodes[j].InnerHtml;
+                    string extractedLink = ExtractLinkFromHtml(productsNodes[j], "href=", "\">");
+                    productsLinks.Add(SigmaAldrichConstants.SigmaAldrichMain + "/" + extractedLink);
+                }
+
+                System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(5.0, 15.0) * 1000);
+
+            }
 
             return productsLinks;
         }
 
-        public static void WriteProductDataToCSVFile(string filepath, Product product)
+        public static void WriteProductDataToCSVFile(string filepath, SA_Product product)
         {
             using (FileStream fs = new FileStream(filepath, FileMode.Append, FileAccess.Write))
             using (StreamWriter sw = new StreamWriter(fs))

@@ -52,6 +52,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SigmaAldrichConstants.cs" />
     <Compile Include="SigmaAldrichParser.cs" />
+    <Compile Include="WebsiteParser.cs" />
+    <Compile Include="WebsiteParserManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

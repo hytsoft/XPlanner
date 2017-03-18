@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using System.Net;
+using System.IO;
 
 namespace InternetDataGetter
 {
@@ -109,17 +110,17 @@ namespace InternetDataGetter
             #endregion
 
             #region GetProductsStarting from page X
-            string category = "MolecularBiology";
+            string category = "SynthetichBiology";
             string categoryUri = SigmaAldrichParser.GetCategoryUri(category);
             List<string> paginationUri = SigmaAldrichParser.GetCategoryPaginationUrls(categoryUri, 0);
 
             Console.WriteLine(string.Format("{0}: Found {1} product pages for category : {2}", DateTime.Now, paginationUri.Count, category));
-            int desiredPage = 1798;
+            int desiredPage = 0;
             for (int i = desiredPage; i < paginationUri.Count; i++)
             {
                 List<string> productsUris = SigmaAldrichParser.GetProductsUri(paginationUri[i]);
 
-                List<Product> products = new List<Product>();
+                List<SA_Product> products = new List<SA_Product>();
                 List<string> elements = new List<string>();
                 List<string> headers = new List<string>();
                 headers.Add("Components");
@@ -138,6 +139,12 @@ namespace InternetDataGetter
 
                 Console.WriteLine(string.Format("{0}: Found {1} products on page {2}/{3} for category {4}", DateTime.Now, productsUris.Count, i + 1, paginationUri.Count, category));
 
+                //write page number to file in case the computer crashes
+                using (StreamWriter writetext = new StreamWriter("currentPage.txt", false))
+                {
+                    writetext.WriteLine(i + 1);
+                }
+
                 for (int j = 0; j < productsUris.Count; j++)
                 {
                     //List<KeyValuePair<string, HtmlNodeCollection>> dataDescription = DataGetter.GetDataByXPATH(new Uri(productsUris[i]), elements);
@@ -148,7 +155,7 @@ namespace InternetDataGetter
                     //products.Add(SigmaAldrichParser.GetProduct(productsUris[i]));
 
                     //SigmaAldrichParser.GetProduct(productsUris[i]
-                    Product p = SigmaAldrichParser.GetProduct(productsUris[j]);
+                    SA_Product p = SigmaAldrichParser.GetProduct(productsUris[j]);
                     SigmaAldrichParser.WriteProductDataToCSVFile(category + ".csv", p);
 
                     System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(5.0, 15.0) * 1000);
