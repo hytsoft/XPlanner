@@ -8,7 +8,7 @@ namespace InternetDataGetter
 {
     class SigmaAldrichConstants
     {
-        public static readonly string SigmaAldrichMain = @"http://www.sigmaaldrich.com";
+        public static readonly string SigmaAldrichMain = @"http://www.sigmaaldrich.com/israel.html";
         public static readonly string AnalyticalStandards = @"http://www.sigmaaldrich.com/catalog/search?interface=All&N=0+9634086&focus=product";
         public static readonly string GasChromatography = @"http://www.sigmaaldrich.com/catalog/search?interface=All&N=0+9648807&mode=partialmax&focus=product";
         public static readonly string Spectroscopy = @"http://www.sigmaaldrich.com/catalog/search?interface=All&N=0+8660837&mode=partialmax&focus=product";
