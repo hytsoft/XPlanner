@@ -7,6 +7,7 @@ using HtmlAgilityPack;
 using System.Net;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace InternetDataGetter
 {
@@ -46,7 +47,18 @@ namespace InternetDataGetter
         public List<TableData> Properties;        
     }
 
-    class SigmaAldrichParser
+    public struct LinkItem
+    {
+        public string Href;
+        public string Text;
+
+        public override string ToString()
+        {
+            return Href + "\n\t" + Text;
+        }
+    }
+
+    class SigmaAldrichParser : WebsiteParser
     {
         public static List<TableData> ParseDetailProperties(HtmlNode node)
         {
@@ -810,7 +822,7 @@ namespace InternetDataGetter
 
             for (int i = 0; i < numPagesToGet; i++)
             {
-                paginationLinks.Add(SigmaAldrichConstants.SigmaAldrichMain + pageParts[0] + "page=" + (i + 1) + pageParts[1]);
+                paginationLinks.Add(SigmaAldrichConstants.SigmaAldrichMain.Substring(0, SigmaAldrichConstants.SigmaAldrichMain.Length - 12) + pageParts[0] + "page=" + (i + 1) + pageParts[1]);
             }
 
             return paginationLinks;
@@ -949,7 +961,7 @@ namespace InternetDataGetter
                 {
                     string link = productsNodes[j].InnerHtml;
                     string extractedLink = ExtractLinkFromHtml(productsNodes[j], "href=", "\">");
-                    productsLinks.Add(SigmaAldrichConstants.SigmaAldrichMain + "/" + extractedLink);
+                    productsLinks.Add(SigmaAldrichConstants.SigmaAldrichMain.Substring(0, SigmaAldrichConstants.SigmaAldrichMain.Length - 12) + "/" + extractedLink);
                 }
 
                 System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(5.0, 15.0) * 1000);
@@ -1029,6 +1041,164 @@ namespace InternetDataGetter
 
                 sw.WriteLine(productString);
             }
+        }
+
+        public override HtmlDocument GetMainPage(Uri uri)
+        {
+            HtmlDocument retVal = null;
+
+            if (uri != null)
+            {
+                retVal = DataGetter.GetHtmlpage(uri);
+            }
+
+            return retVal;
+        }
+
+        public override List<Uri> GetCategories(HtmlDocument document)
+        {
+            //List<KeyValuePair<string, string>> categories = new List<KeyValuePair<string, string>>();
+            List<Uri> categories = new List<Uri>();
+            List<string> rawCategories = new List<string>();
+            List<string> elements = new List<string>();
+            elements.Add("//div[@class='navColumn']");
+
+            List<KeyValuePair<string, HtmlNodeCollection>> categoriesColumn = DataGetter.GetDataByXPATH(document, elements);
+
+            for (int i = 0; i < categoriesColumn[0].Value.Count; i++)
+            {
+                HtmlNode currMajorCategory = categoriesColumn[0].Value[i];
+
+                for (int j = 0; j < currMajorCategory.ChildNodes.Count; j++)
+                {
+                    HtmlNode currInnerStructure = currMajorCategory.ChildNodes[j];
+                    if (currInnerStructure.Name == "ul")
+                    {
+                        for (int k = 0; k < currInnerStructure.ChildNodes.Count; k++)
+                        {
+                            HtmlNode currDeeperInnerStructure = currInnerStructure.ChildNodes[k];
+                            if (currDeeperInnerStructure.Name == "li")
+                            {
+                                if (currDeeperInnerStructure.InnerHtml.Contains("a href"))
+                                {
+                                    //categories.Add(new KeyValuePair<string, string>(currDeeperInnerStructure.ChildNodes[t].InnerText, currDeeperInnerStructure.ChildNodes[t].InnerHtml));
+                                    rawCategories.Add(currDeeperInnerStructure.InnerHtml);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (int i = 0; i < rawCategories.Count; i++)
+            {
+                //, "(\\S+)=[\"']?((?:.(?![\"']?\\s + (?:\\S +)=|[> \"']))+.)[\"']?"
+                List<LinkItem> list = GetHRefValue(rawCategories[i]);
+
+                categories.Add(new Uri( list[0].Href));
+            }
+
+            categories = categories.FindAll(x => x.AbsoluteUri.Contains("catalog/search"));
+
+            return categories;
+        }
+
+        public static List<LinkItem> GetHRefValue(string file)
+        {
+            List<LinkItem> list = new List<LinkItem>();
+
+            // 1.
+            // Find all matches in file.
+            MatchCollection m1 = Regex.Matches(file, @"(<a.*?>.*?</a>)",
+                RegexOptions.Singleline);
+
+            // 2.
+            // Loop over each match.
+            foreach (Match m in m1)
+            {
+                string value = m.Groups[1].Value;
+                LinkItem i = new LinkItem();
+
+                // 3.
+                // Get href attribute.
+                Match m2 = Regex.Match(value, @"href=\""(.*?)\""",
+                RegexOptions.Singleline);
+                if (m2.Success)
+                {
+                    i.Href = m2.Groups[1].Value;
+                }
+
+                // 4.
+                // Remove inner tags from text.
+                string t = Regex.Replace(value, @"\s*<.*?>\s*", "",
+                RegexOptions.Singleline);
+                i.Text = t;
+
+                list.Add(i);
+            }
+            return list;
+        }
+
+        public override List<Product> GetProducts(Uri category)
+        {
+            List<Product> products = new List<Product>();
+            List<string> paginationUri = SigmaAldrichParser.GetCategoryPaginationUrls(category.AbsoluteUri, 0);
+
+            //desiredPage
+            for (int i = 0; i < paginationUri.Count; i++)
+            {
+                List<string> productsUris = SigmaAldrichParser.GetProductsUri(paginationUri[i]);
+
+                
+                List<string> elements = new List<string>();
+                List<string> headers = new List<string>();
+                headers.Add("Components");
+                headers.Add("Application");
+                headers.Add("Features and Benefits");
+                headers.Add("General description");
+                headers.Add("Packaging");
+                headers.Add("Reconstitution");
+                headers.Add("Other Notes");
+                headers.Add("Legal Information");
+                headers.Add("Caution");
+                headers.Add("Biochem/physiol Actions");
+                headers.Add("Preparation Note");
+
+                elements.Add("//div[@class='descriptionContent']");
+
+                //Console.WriteLine(string.Format("{0}: Found {1} products on page {2}/{3} for category {4}", DateTime.Now, productsUris.Count, i + 1, paginationUri.Count, category));
+
+                //write page number to file in case the computer crashes
+                using (StreamWriter writetext = new StreamWriter("currentPage.txt", false))
+                {
+                    writetext.WriteLine(i + 1);
+                }
+
+                for (int j = 0; j < productsUris.Count; j++)
+                {
+                    //List<KeyValuePair<string, HtmlNodeCollection>> dataDescription = DataGetter.GetDataByXPATH(new Uri(productsUris[i]), elements);
+                    //Description description = SigmaAldrichParser.ParseDescription(dataDescription, headers);
+
+                    //products.Add(description);
+
+                    //products.Add(SigmaAldrichParser.GetProduct(productsUris[i]));
+
+                    //SigmaAldrichParser.GetProduct(productsUris[i]
+                    SA_Product p = SigmaAldrichParser.GetProduct(productsUris[j]);
+                    products.Add(p);
+                    //SigmaAldrichParser.WriteProductDataToCSVFile(category + ".csv", p);
+
+                    System.Threading.Thread.Sleep((int)DataGetter.GetRandomNumber(3.0, 7.0) * 1000);
+                    //Console.WriteLine(string.Format("{0}: Successfully wrote product {1}/{2}: {3}", DateTime.Now, j + 1, productsUris.Count, p.Name));
+                }
+            }
+
+            return products;
+        }
+
+        public override Product GetProduct(Uri product)
+        {
+            throw new NotImplementedException();
         }
     }
 }
