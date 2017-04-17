@@ -180,12 +180,27 @@ namespace InternetDataGetter
                 {
                     string currLine = subcat_bulk_sorted[i];
                     Uri currUri = new Uri(currLine);
-                    products_uris = get_products_uris(currUri);
-                    for (int j = 0; j<products_uris.Count(); j++)
+
+                    HtmlDocument currProductPage = GetPage(currUri);
+                    List<Uri> productsUris = getProductTypes(currProductPage);
+
+                    if (productsUris !=null && productsUris.Count > 0)
                     {
-                        Uri currProdUri = products_uris[j];
-                        Product product = GetProduct(currProdUri);
+                        for (int j = 0; j < productsUris.Count; j++)
+                        {
+                            Product product = GetProduct(productsUris[j]); 
+                        }
                     }
+                    else //has sub category, need to fetch links to sub category
+                    {
+                        for (int j = 0; j < products_uris.Count(); j++)
+                        {
+                            Uri currProdUri = products_uris[j];
+                            Product product = GetProduct(currProdUri);
+                        }
+                    }
+
+                    
                 }
             }
             else //(final sub-category-order reached)
@@ -205,7 +220,7 @@ namespace InternetDataGetter
         {
             HtmlDocument productPage = GetPage(product);
             //string GeneralDescription = getGeneralDescription(productPage);
-            List<HtmlDocument> product_types = getProductTypes(productPage);
+            List<Uri> product_types = getProductTypes(productPage);
             if (product_types!=null)
             {
                 for (int i = 0; i < product_types.Count(); i++)
@@ -285,13 +300,19 @@ namespace InternetDataGetter
             return products_uris;
         }
 
-        public List<HtmlDocument> getProductTypes(HtmlDocument productPage)
+        public List<Uri> getProductTypes(HtmlDocument productPage)
         {
-            string id = "//tr";
+            ////ul[@class='products-list hover-effect']
+            string id = "//table[@class ='data-table grouped-items-table']//a[@href]";
             List<string> ids = new List<string>();
             ids.Add(id);
             List<KeyValuePair<string, HtmlNodeCollection>> raw_types = DataGetter.GetDataByXPATH(productPage, ids);
 
+            //we are looking for the table body, where all the links are...
+            HtmlNodeCollection tableBody = raw_types[0].Value;
+            
+
+            
 
             return null;
         }
