@@ -13,11 +13,11 @@ namespace InternetDataGetter
         public List<Product> Products;
     }
 
-    class WebsiteParserManager
+    public class WebsiteParserManager
     {
         List<WebsiteParser> m_Websites;
 
-        WebsiteParserManager(List<WebsiteParser> websites)
+        public WebsiteParserManager(List<WebsiteParser> websites)
         {
             m_Websites = websites;
         }
@@ -29,7 +29,7 @@ namespace InternetDataGetter
 
             for (int i = 0; i < m_Websites.Count; i++)
             {
-                HtmlDocument htmlDocument = m_Websites[i].GetMainPage(m_Websites[i].address);
+                HtmlDocument htmlDocument = m_Websites[i].GetPage(m_Websites[i].address);
                 List<Uri> categories = m_Websites[i].GetCategories(htmlDocument);
 
                 List<Product> currCategoryProducts = null;

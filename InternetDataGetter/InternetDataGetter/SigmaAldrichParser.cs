@@ -1043,7 +1043,7 @@ namespace InternetDataGetter
             }
         }
 
-        public override HtmlDocument GetMainPage(Uri uri)
+        public override HtmlDocument GetPage(Uri uri)
         {
             HtmlDocument retVal = null;
 

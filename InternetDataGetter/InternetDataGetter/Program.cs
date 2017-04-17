@@ -13,18 +13,15 @@ namespace InternetDataGetter
     {
         static void Main(string[] args)
         {
-            BiologicalIndusriesParser BI_website_parser = new BiologicalIndusriesParser(); //create new class instance to use abstract methods one by one
-            string BILink = "http://www.bioind.com/israel/"; //define main link to BI home page
-            Uri BI_uri = new Uri(BILink); //create uri for page retrieval
-            List<Uri> Categories = new List<Uri>(); //create list of category uris
+            string BI_Link = "http://www.bioind.com/"; //define main link to BI home page
+            BiologicalIndusriesParser BI_website_parser = new BiologicalIndusriesParser(BI_Link); //create new class instance to use abstract methods one by one
+            List<WebsiteParser> websites = new List<WebsiteParser>();
+            websites.Add(BI_website_parser);
 
-            HtmlDocument mainPage = BI_website_parser.GetMainPage(BI_uri); // get BI home page as HtmlDocument
 
-            Categories = BI_website_parser.GetCategories(mainPage); // get all category uris
-            
-            //List<WebsiteParser> websites = new list<WebsiteParser>;
+            WebsiteParserManager wbm = new WebsiteParserManager(websites);
 
-            //websites.Add(BI_website_parser);
+            wbm.GetProducts();
         }
     }
 }
